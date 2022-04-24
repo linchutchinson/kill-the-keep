@@ -11,25 +11,26 @@ pub fn create_enemy_intents(entity: &Entity, _: &Enemy, commands: &mut CommandBu
 #[read_component(Vec2)]
 #[read_component(Sprite)]
 pub fn draw_enemy_intents(ecs: &mut SubWorld, enemy_intents: &EnemyAttackIntent, #[resource] ui_tex: &UITextures) {
-    let enemy = ecs.entry_ref(enemy_intents.enemy).unwrap();
-    let base_pos = enemy.get_component::<Vec2>().unwrap();
-    let sprite = enemy.get_component::<Sprite>().unwrap();
-
-    let render_pos = *base_pos - (Vec2::Y * sprite.texture.height());
-
-    draw_texture(ui_tex.attack_intent, render_pos.x, render_pos.y, Color::new(1.0, 0.0, 0.0, 1.0));
-    draw_text(&format!("{}", enemy_intents.damage), render_pos.x, render_pos.y, 32.0, TEXT_COLOR);
+    
+    if let Ok(enemy) = ecs.entry_ref(enemy_intents.enemy) {
+        let base_pos = enemy.get_component::<Vec2>().unwrap();
+        let sprite = enemy.get_component::<Sprite>().unwrap();
+    
+        let render_pos = *base_pos - (Vec2::Y * sprite.texture.height());
+    
+        draw_texture(ui_tex.attack_intent, render_pos.x, render_pos.y, Color::new(1.0, 0.0, 0.0, 1.0));
+        draw_text(&format!("{}", enemy_intents.damage), render_pos.x, render_pos.y, 32.0, TEXT_COLOR);
+    }
 }
 
 #[system(for_each)]
 #[read_component(Player)]
-#[write_component(Health)]
 pub fn resolve_enemy_intents(ecs: &mut SubWorld, entity: &Entity, intent: &EnemyAttackIntent, commands: &mut CommandBuffer) {
-    if let Some((_, health)) = <(&Player, &mut Health)>::query()
-        .iter_mut(ecs)
+    if let Some((player_entity, _)) = <(Entity, &Player)>::query()
+        .iter(ecs)
         .nth(0)
     {
-        health.current -= intent.damage;
+        commands.push(((), DealDamageMessage{ target: *player_entity , amount: intent.damage }));
     }
     
     commands.remove(*entity);
