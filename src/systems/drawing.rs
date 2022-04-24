@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-const HEALTH_BAR_WIDTH: f32 = 250.0;
+const HEALTH_BAR_WIDTH: f32 = 100.0;
 const HEALTH_BAR_VERT_OFFSET: f32 = 16.0;
 const HEALTH_BAR_HEIGHT: f32 = 16.0;
 

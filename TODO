@@ -3,7 +3,17 @@
 [X] Shuffle Deck
 
 [ ] Map?
-[ ] BUG: Enemy Intents persist between combats and you get attacked by ghosts
+[X] BUG: Enemy Intents persist between combats and you get attacked by ghosts
 [ ] Make more enemy types
 [ ] Relics?
 [ ] Card Drafting?
+
+//
+
+> Attack
+> Block
+> Apply Debuff
+
+> Define Combinations into a complete attack
+
+> Enemy points to a list of attack options with a percentage to select each one

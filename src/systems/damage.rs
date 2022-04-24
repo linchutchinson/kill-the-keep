@@ -3,15 +3,31 @@ use crate::prelude::*;
 #[system(for_each)]
 #[read_component(StatusEffect)]
 #[read_component(DamageMultiplier)]
+#[read_component(IncomingEffect)]
+#[read_component(OutgoingEffect)]
 pub fn apply_damage_multipliers(ecs: &mut SubWorld, message: &mut DealDamageMessage) {
-    let mut status_query = <(&StatusEffect, &DamageMultiplier)>::query();
+    let mut status_query = <(Entity, &StatusEffect, &DamageMultiplier)>::query();
+    let mut final_damage = message.amount;
 
+    //Outgoing Status
     status_query
         .iter(ecs)
-        .filter(|(status, _)| { status.target == message.target })
-        .for_each(|(_, damage_multiplier)| {
-            message.amount = (damage_multiplier.multiplier * message.amount as f32) as i32;
+        .filter(|(_, status, _)| { status.target == message.source })
+        .filter(|(entity, _, _)| { ecs.entry_ref(**entity).unwrap().get_component::<OutgoingEffect>().is_ok() })
+        .for_each(|(_, _, damage_multiplier)| {
+            final_damage = (damage_multiplier.multiplier * final_damage as f32) as i32;
         });
+
+    //Incoming Status
+    status_query
+        .iter(ecs)
+        .filter(|(_, status, _)| { status.target == message.target })
+        .filter(|(entity, _, _)| { ecs.entry_ref(**entity).unwrap().get_component::<IncomingEffect>().is_ok() })
+        .for_each(|(_, _, damage_multiplier)| {
+            final_damage = (damage_multiplier.multiplier * final_damage as f32) as i32;
+        });
+
+    message.amount = final_damage;
 
 }
 

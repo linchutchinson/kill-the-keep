@@ -3,7 +3,8 @@ use crate::prelude::*;
 #[system]
 #[read_component(Health)]
 #[read_component(Player)]
-pub fn check_for_deaths(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnState) {
+#[read_component(EnemyIntent)]
+pub fn check_for_deaths(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnState, commands: &mut CommandBuffer) {
     let mut player_query = <(&Player, &Health)>::query();
     let mut all_players_dead = true;
 
@@ -28,9 +29,21 @@ pub fn check_for_deaths(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnSta
         .filter(|(entity, _)| {
             !ecs.entry_ref(**entity).unwrap().get_component::<Player>().is_ok()
         })
-        .for_each(|(_, health)| {
+        .for_each(|(entity, health)| {
             if health.current > 0 {
                 all_enemies_dead = false;
+            } else {
+                commands.remove(*entity);
+
+                let mut intent_query = <(Entity, &EnemyIntent)>::query();
+
+                intent_query.iter(ecs)
+                    .filter(|(intent_entity, enemy_intent)| {
+                        enemy_intent.enemy == *entity
+                    })
+                    .for_each(|(intent_entity, _)| {
+                        commands.remove(*intent_entity);
+                    });
             }
         });
     

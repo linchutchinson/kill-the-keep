@@ -18,6 +18,7 @@ mod death;
 pub fn build_initialization_schedule() -> Schedule {
     Schedule::builder()
         .add_system(spawn_initial_combatants_system())
+        .add_system(spawn_random_enemies_system())
         .add_system(begin_battle_system())
         .build()
 }
@@ -26,12 +27,22 @@ pub fn build_start_of_turn_schedule() -> Schedule {
     let mut builder = Schedule::builder();
 
     builder
-        .add_system(position_characters_system())
+        .add_system(enemy_intents::clear_enemy_intents_system())
+        .flush()
+        .add_system(position_heroes_system())
+        .add_system(position_enemies_system())
         .add_system(status_effects::reduce_remaining_duration_of_effects_system())
         .add_system(draw_cards::discard_hand_system())
         .add_system(enemy_intents::create_enemy_intents_system())
+        .flush()
+        .add_system(enemy_intents::create_deal_damage_intents_system())
+        .add_system(enemy_intents::create_inflict_vulnerability_intents_system())
+        .add_system(enemy_intents::create_inflict_weakness_intents_system())
+        .add_system(enemy_intents::create_block_intents_system())
         .add_system(energy::refill_energy_system())
-        .add_system(block::clear_block_system())
+        .add_system(block::clear_player_block_system())
+        .flush()
+        .add_system(enemy_intents::clear_enemy_take_action_messages_system())
         .flush();
     
     add_render_systems_to_builder(&mut builder);
@@ -48,7 +59,8 @@ pub fn build_player_turn_schedule() -> Schedule {
     let mut builder = Schedule::builder();
 
     builder
-            .add_system(position_characters_system())
+            .add_system(position_heroes_system())
+            .add_system(position_enemies_system())
             .flush();
     
     add_render_systems_to_builder(&mut builder);
@@ -75,13 +87,18 @@ pub fn build_enemy_turn_schedule() -> Schedule {
     let mut builder = Schedule::builder();
 
     builder
-        .add_system(position_characters_system())
+        .add_system(position_heroes_system())
+        .add_system(position_enemies_system())
+        .add_system(block::clear_enemy_block_system())
         .flush();
 
     add_render_systems_to_builder(&mut builder);
             
     builder
         .add_system(enemy_intents::resolve_enemy_intents_system())
+        .add_system(enemy_intents::resolve_enemy_invulnerability_intents_system())
+        .add_system(enemy_intents::resolve_enemy_weakness_intents_system())
+        .add_system(enemy_intents::resolve_enemy_block_intents_system())
         .flush();
 
     add_combat_resolution_systems_to_builder(&mut builder);
@@ -95,6 +112,7 @@ pub fn build_enemy_turn_schedule() -> Schedule {
 pub fn build_end_of_battle_schedule() -> Schedule {
     Schedule::builder()
         .add_system(restart_battle_system())
+        .add_system(spawn_random_enemies_system())
         .build()
 }
 
@@ -120,18 +138,29 @@ fn add_combat_resolution_systems_to_builder(builder: &mut Builder) -> &mut Build
         .add_system(damage::deal_damage_system())
         .flush()
         .add_system(status_effects::apply_vulnerability_system())
+        .add_system(status_effects::apply_weakness_system())
 }
 
 #[system(for_each)]
 #[read_component(Player)]
 #[read_component(Enemy)]
 #[write_component(Vec2)]
-fn position_characters(entity: &Entity, pos: &mut Vec2, ecs: &mut SubWorld) {
-    if ecs.entry_ref(*entity).unwrap().get_component::<Player>().is_ok() {
-        *pos = get_player_pos();
-    } else {
-        *pos = get_enemy_pos();
-    }
+fn position_heroes(entity: &Entity, pos: &mut Vec2, _: &Player, ecs: &mut SubWorld) {
+    *pos = get_player_pos();
+}
+
+#[system]
+#[read_component(Enemy)]
+#[write_component(Vec2)]
+fn position_enemies(ecs: &mut SubWorld) {
+    let mut enemy_query = <(&Enemy, &mut Vec2)>::query();
+
+    enemy_query.iter_mut(ecs)
+        .enumerate()
+        .for_each(|(idx, (enemy, mut pos))| {
+            *pos = get_enemy_pos(idx as i32);
+        });
+
 }
 
 #[system]
@@ -155,8 +184,6 @@ fn restart_battle(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnState, co
             commands.remove(*entity);
         });
     
-    spawn_orc(commands, combatant_tex);
-    
     if !*player_victorious {
         let mut player_query = <(Entity, &Player)>::query();
         player_query
@@ -174,7 +201,26 @@ fn restart_battle(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnState, co
 #[system]
 fn spawn_initial_combatants(commands: &mut CommandBuffer, #[resource] combatant_textures: &CombatantTextures) {
     spawn_hero(commands, combatant_textures);
-    spawn_orc(commands, combatant_textures);
+}
+
+#[system]
+fn spawn_random_enemies(commands: &mut CommandBuffer, #[resource] combatant_textures: &CombatantTextures) {
+    let mut enemies_to_spawn = thread_rng().gen_range(1..=3);
+
+    (0..enemies_to_spawn).for_each(|idx| {
+        let enemy_type: i32 = thread_rng().gen_range(0..3);
+        match enemy_type { 
+            0 => {
+                spawn_orc(commands, combatant_textures);
+            },
+            1 => {
+                spawn_crow(commands, combatant_textures)
+            },
+            _ => {
+                spawn_spider(commands, combatant_textures)
+            }
+        }
+    });
 }
 
 #[system]

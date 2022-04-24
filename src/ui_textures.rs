@@ -4,6 +4,7 @@ pub struct UITextures {
     pub crosshair: Texture2D,
     pub attack_intent: Texture2D,
     pub vulnerability: Texture2D,
+    pub weakness: Texture2D,
 }
 
 impl UITextures {
@@ -19,6 +20,10 @@ impl UITextures {
             ),
             vulnerability: Texture2D::from_file_with_format(
                 include_bytes!("../assets/sprites/vulnerability_icon.png"),
+                None,
+            ),
+            weakness: Texture2D::from_file_with_format(
+                include_bytes!("../assets/sprites/weakness_icon.png"),
                 None,
             ),
         }

@@ -5,8 +5,12 @@ use crate::prelude::*;
 #[read_component(Vec2)]
 #[read_component(Enemy)]
 #[read_component(Sprite)]
+#[read_component(Player)]
 pub fn select_card_targets(ecs: &mut SubWorld, card_entity: &Entity, _: &Selected, commands: &mut CommandBuffer) {
     if is_mouse_button_released(MouseButton::Left) {
+        let mut player_query = <(Entity, &Player)>::query();
+
+        let player_entity = player_query.iter(ecs).nth(0).unwrap().0;
 
         if let Ok(_targeted_card) = ecs.entry_ref(*card_entity).unwrap().get_component::<SelectTarget>() {
             let mut targets_query = <(Entity, &Vec2, &Enemy, &Sprite)>::query();
@@ -29,11 +33,11 @@ pub fn select_card_targets(ecs: &mut SubWorld, card_entity: &Entity, _: &Selecte
             
             if let Some(target) = target {
                 println!("Playing card on a target!");
-                commands.push(((), PlayCardMessage{ card:  *card_entity },  PlayTargetedCardMessage{ card:  *card_entity, target: *target }));
+                commands.push(((), PlayCardMessage{ source: *player_entity, card:  *card_entity },  PlayTargetedCardMessage{ target: *target }));
             }
         } else {
             println!("Playing a non-targeted card.");
-            commands.push(((), PlayCardMessage{ card:  *card_entity }));
+            commands.push(((), PlayCardMessage{ source: *player_entity, card:  *card_entity }));
         }
     }
 }

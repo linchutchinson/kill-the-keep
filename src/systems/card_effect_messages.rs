@@ -5,13 +5,14 @@ use crate::prelude::*;
 #[read_component(DealsDamage)]
 pub fn send_card_damage(
     ecs: &mut SubWorld,
-    message: &PlayTargetedCardMessage, 
+    message: &PlayCardMessage,
+    targeted_message: &PlayTargetedCardMessage, 
     commands: &mut CommandBuffer
 ) {
     let card_ref = ecs.entry_ref(message.card).unwrap();
 
     if let Ok(damage) = card_ref.get_component::<DealsDamage>() {
-        commands.push(((), DealDamageMessage{ target: message.target, amount: damage.amount }));
+        commands.push(((), DealDamageMessage{ source: message.source, target: targeted_message.target, amount: damage.amount }));
     }
 }
 
@@ -20,13 +21,14 @@ pub fn send_card_damage(
 #[read_component(InflictVulnerability)]
 pub fn send_card_vulnerability(
     ecs: &mut SubWorld,
-    message: &PlayTargetedCardMessage, 
+    message: &PlayCardMessage,
+    targeted_message: &PlayTargetedCardMessage, 
     commands: &mut CommandBuffer
 ) {
     let card_ref = ecs.entry_ref(message.card).unwrap();
 
     if let Ok(vuln) = card_ref.get_component::<InflictVulnerability>() {
-        commands.push(((), ApplyVulnerabilityMessage{ target: message.target, amount: vuln.amount }));
+        commands.push(((), ApplyVulnerabilityMessage{ target: targeted_message.target, amount: vuln.amount }));
     }
 }
 

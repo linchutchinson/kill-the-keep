@@ -18,6 +18,11 @@ pub fn apply_block(
 }
 
 #[system(for_each)]
-pub fn clear_block(health: &mut Health) {
+pub fn clear_player_block(health: &mut Health, _: &Player) {
+    health.block = 0;
+}
+
+#[system(for_each)]
+pub fn clear_enemy_block(health: &mut Health, _: &Enemy) {
     health.block = 0;
 }
