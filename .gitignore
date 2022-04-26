@@ -1,2 +1,4 @@
 /target
 assets/sprites
+.vscode
+!.vscode/launch.json
