@@ -18,17 +18,19 @@ pub fn spawn_hero(commands: &mut CommandBuffer, combatant_tex: &CombatantTexture
 }
 
 pub fn spawn_orc(commands: &mut CommandBuffer, combatant_tex: &CombatantTextures) {
-    let simple_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 3, max: 7 }));
-    let debuff_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 8, max: 14 }, InflictVulnerability{ amount: 2 }));
-    let block = commands.push(((), EnemyActionOption, BlockRange{ min: 4, max: 8 }));
+    let simple_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 6, max: 8 }));
+    let debuff_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 10, max: 14 }, InflictVulnerability{ amount: 2 }));
+    let block = commands.push(((), EnemyActionOption, BlockRange{ min: 5, max: 8 }));
+
+    let hp = thread_rng().gen_range(14..18);
 
     commands.push(
         (
             Vec2::ZERO,
             Enemy{ attack_options: vec![(simple_attack, 0.4), (block, 0.4), (debuff_attack, 0.2),] },
             Health {
-                current: 6,
-                max: 6,
+                current: hp,
+                max: hp,
                 block: 0,
             },
             Sprite {
@@ -39,17 +41,19 @@ pub fn spawn_orc(commands: &mut CommandBuffer, combatant_tex: &CombatantTextures
 }
 
 pub fn spawn_spider(commands: &mut CommandBuffer, combatant_tex: &CombatantTextures) {
-    let simple_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 3, max: 7 }));
+    let simple_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 3, max: 5 }));
     let debuff_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 5, max: 10 }, InflictWeakness{ amount: 2 }));
-    let block = commands.push(((), EnemyActionOption, BlockRange{ min: 4, max: 8 }));
+    let block = commands.push(((), EnemyActionOption, BlockRange{ min: 3, max: 6 }));
+
+    let hp = thread_rng().gen_range(14..18);
 
     commands.push(
         (
             Vec2::ZERO,
-            Enemy{ attack_options: vec![(simple_attack, 0.4), (block, 0.4), (debuff_attack, 0.2),] },
+            Enemy{ attack_options: vec![(simple_attack, 0.3), (block, 0.4), (debuff_attack, 0.3),] },
             Health {
-                current: 6,
-                max: 6,
+                current: hp,
+                max: hp,
                 block: 0,
             },
             Sprite {
@@ -61,7 +65,7 @@ pub fn spawn_spider(commands: &mut CommandBuffer, combatant_tex: &CombatantTextu
 
 pub fn spawn_crow(commands: &mut CommandBuffer, combatant_tex: &CombatantTextures) {
     let multiple_attack = commands.push(((), EnemyActionOption, DamageRange{ min: 1, max: 2 }, MultipleAttack{ times: 5 }));
-    let block = commands.push(((), EnemyActionOption, BlockRange{ min: 4, max: 8 }));
+    let block = commands.push(((), EnemyActionOption, BlockRange{ min: 6, max: 9 }));
 
     let hp = thread_rng().gen_range(10..15);
 
