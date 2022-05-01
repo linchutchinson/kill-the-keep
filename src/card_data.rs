@@ -26,7 +26,8 @@ impl CardDB {
                 Ok(CardData {
                     id: row.get(0).unwrap(),
                     name: row.get(1).unwrap(),
-                    effects: row.get(2).unwrap(),
+                    cost: row.get(2).unwrap(),
+                    effects: row.get(3).unwrap(),
                 })
             })
             .unwrap();
@@ -39,11 +40,70 @@ impl CardDB {
 pub struct CardData {
     id: i32,
     name: String,
+    cost: Option<i32>,
     effects: String,
 }
 
 impl CardData {
-    pub fn spawn_as_entity(&mut self, commands: &mut CommandBuffer) {}
+    pub fn spawn_as_entity(&mut self, commands: &mut CommandBuffer) -> Result<Entity, String> {
+        if let Ok(card_effects) = get_card_effects_from_text(self.effects.to_owned()) {
+            let entity = commands.push((
+                (),
+                Card {
+                    name: self.name.to_owned(),
+                },
+            ));
+
+            if let Some(cost) = self.cost {
+                commands.add_component(entity, EnergyCost { amount: cost });
+            }
+
+            let mut is_targeted = false;
+
+            card_effects.iter().for_each(|effect| match effect {
+                CardEffect::DealDamage(target, amount) => match target {
+                    Target::Hero => {
+                        eprintln!("Effect Not Implemented: Self Damage");
+                    }
+
+                    Target::Enemy => {
+                        is_targeted = true;
+                        commands.add_component(entity, DealsDamage { amount: *amount });
+                    }
+                },
+
+                CardEffect::Block(amount) => {
+                    commands.add_component(entity, AddsBlock { amount: *amount })
+                }
+
+                CardEffect::InflictVulnerability(target, amount) => match target {
+                    Target::Enemy => {
+                        is_targeted = true;
+                        commands.add_component(entity, InflictVulnerability { amount: *amount });
+                    }
+
+                    Target::Hero => {
+                        eprintln!("Effect Not Implemented: Self Inflicted Vulnerability")
+                    }
+                },
+
+                _ => {
+                    eprintln!(
+                        "Unimplemented Card Effect!\n{:?}\nIn Card: {}",
+                        effect, self.name
+                    )
+                }
+            });
+
+            if is_targeted {
+                commands.add_component(entity, SelectTarget);
+            }
+
+            Ok(entity)
+        } else {
+            Err("Failed to Parse".to_string())
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -67,10 +127,10 @@ impl CardEffect {
                     let keyword = val[0..open_paren_pos].to_string();
                     let params_str = val[open_paren_pos + 1..close_paren_pos].to_string();
 
-                    let mut params = params_str.split(",").into_iter().map(|val| {
-                        println!("{}", val);
-                        val.trim().parse::<i32>().unwrap()
-                    });
+                    let mut params = params_str
+                        .split(",")
+                        .into_iter()
+                        .map(|val| val.trim().parse::<i32>().unwrap());
 
                     match keyword.as_str() {
                         "deal" => {
@@ -97,11 +157,20 @@ impl CardEffect {
             }
         }
 
-        Err("Fail".to_string())
+        Err(format!("Could not successfully parse string: {}", val))
     }
 }
 
-struct CardCode;
+fn get_card_effects_from_text(val: String) -> Result<Vec<CardEffect>, String> {
+    let effects = val
+        .split(';')
+        .map(|command| command.trim())
+        .filter(|command| *command != "")
+        .map(|command| CardEffect::from_string(command.to_string()))
+        .collect::<Result<Vec<CardEffect>, String>>();
+
+    effects
+}
 
 #[cfg(test)]
 mod tests {
@@ -115,7 +184,8 @@ mod tests {
         let expected = CardData {
             id: 1,
             name: "Strike".to_string(),
-            effects: "damage(6);".to_string(),
+            cost: Some(1),
+            effects: "deal(6);".to_string(),
         };
 
         assert_eq!(actual, expected)
@@ -128,6 +198,20 @@ mod tests {
         let actual = CardEffect::from_string(effect_string).unwrap();
 
         let expected = CardEffect::DealDamage(Target::Enemy, amount);
+        assert_eq!(actual, expected)
+    }
+
+    #[test]
+    fn test_multiple_commands_in_string() {
+        let expected = Ok(vec![
+            CardEffect::DealDamage(Target::Enemy, 3),
+            CardEffect::Block(4),
+            CardEffect::InflictVulnerability(Target::Enemy, 5),
+        ]);
+        let effect_string = "deal(3);block(4)\n;\nvuln(5);";
+
+        let actual = get_card_effects_from_text(effect_string.to_string());
+
         assert_eq!(actual, expected)
     }
 }

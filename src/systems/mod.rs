@@ -1,22 +1,23 @@
-use legion::systems::Builder;
 use crate::prelude::*;
+use legion::systems::Builder;
 
-mod drawing;
-mod hand_drawing;
-mod card_selection;
+mod block;
+mod card_effect_messages;
 mod card_playing;
-mod end_turn;
+mod card_selection;
+mod damage;
+mod death;
 mod draw_cards;
+mod drawing;
+mod end_turn;
 mod enemy_intents;
 mod energy;
-mod card_effect_messages;
-mod damage;
-mod block;
+mod hand_drawing;
 mod status_effects;
-mod death;
 
 pub fn build_initialization_schedule() -> Schedule {
     Schedule::builder()
+        .add_system(spawn_starter_deck_system())
         .add_system(spawn_initial_combatants_system())
         .add_system(spawn_random_enemies_system())
         .add_system(begin_battle_system())
@@ -44,7 +45,7 @@ pub fn build_start_of_turn_schedule() -> Schedule {
         .flush()
         .add_system(enemy_intents::clear_enemy_take_action_messages_system())
         .flush();
-    
+
     add_render_systems_to_builder(&mut builder);
 
     builder
@@ -59,10 +60,10 @@ pub fn build_player_turn_schedule() -> Schedule {
     let mut builder = Schedule::builder();
 
     builder
-            .add_system(position_heroes_system())
-            .add_system(position_enemies_system())
-            .flush();
-    
+        .add_system(position_heroes_system())
+        .add_system(position_enemies_system())
+        .flush();
+
     add_render_systems_to_builder(&mut builder);
 
     builder
@@ -74,7 +75,7 @@ pub fn build_player_turn_schedule() -> Schedule {
         .add_system(card_effect_messages::send_card_vulnerability_system())
         .add_system(card_playing::play_card_system())
         .flush();
-    
+
     add_combat_resolution_systems_to_builder(&mut builder);
 
     builder
@@ -93,7 +94,7 @@ pub fn build_enemy_turn_schedule() -> Schedule {
         .flush();
 
     add_render_systems_to_builder(&mut builder);
-            
+
     builder
         .add_system(enemy_intents::resolve_enemy_intents_system())
         .add_system(enemy_intents::resolve_enemy_invulnerability_intents_system())
@@ -155,22 +156,25 @@ fn position_heroes(entity: &Entity, pos: &mut Vec2, _: &Player, ecs: &mut SubWor
 fn position_enemies(ecs: &mut SubWorld) {
     let mut enemy_query = <(&Enemy, &mut Vec2)>::query();
 
-    enemy_query.iter_mut(ecs)
+    enemy_query
+        .iter_mut(ecs)
         .enumerate()
         .for_each(|(idx, (enemy, mut pos))| {
             *pos = get_enemy_pos(idx as i32);
         });
-
 }
 
 #[system]
 #[read_component(Player)]
 #[read_component(Enemy)]
-fn restart_battle(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnState, commands: &mut CommandBuffer, #[resource] combatant_tex: &CombatantTextures) {
+fn restart_battle(
+    ecs: &mut SubWorld,
+    #[resource] turn_state: &mut TurnState,
+    commands: &mut CommandBuffer,
+    #[resource] combatant_tex: &CombatantTextures,
+) {
     let player_victorious = match turn_state {
-        TurnState::BattleOver{ player_victorious } => {
-            player_victorious
-        },
+        TurnState::BattleOver { player_victorious } => player_victorious,
 
         _ => {
             panic!();
@@ -178,47 +182,45 @@ fn restart_battle(ecs: &mut SubWorld, #[resource] turn_state: &mut TurnState, co
     };
 
     let mut enemy_query = <(Entity, &Enemy)>::query();
-    enemy_query
-        .iter(ecs)
-        .for_each(|(entity, _)| {
-            commands.remove(*entity);
-        });
-    
+    enemy_query.iter(ecs).for_each(|(entity, _)| {
+        commands.remove(*entity);
+    });
+
     if !*player_victorious {
         let mut player_query = <(Entity, &Player)>::query();
-        player_query
-            .iter(ecs)
-            .for_each(|(entity, _)| {
-                commands.remove(*entity);
-            });
-        
+        player_query.iter(ecs).for_each(|(entity, _)| {
+            commands.remove(*entity);
+        });
+
         spawn_hero(commands, combatant_tex);
     }
 
-    *turn_state = TurnState::StartOfTurn{ round_number: 1 }; 
+    *turn_state = TurnState::StartOfTurn { round_number: 1 };
 }
 
 #[system]
-fn spawn_initial_combatants(commands: &mut CommandBuffer, #[resource] combatant_textures: &CombatantTextures) {
+fn spawn_initial_combatants(
+    commands: &mut CommandBuffer,
+    #[resource] combatant_textures: &CombatantTextures,
+) {
     spawn_hero(commands, combatant_textures);
 }
 
 #[system]
-fn spawn_random_enemies(commands: &mut CommandBuffer, #[resource] combatant_textures: &CombatantTextures) {
+fn spawn_random_enemies(
+    commands: &mut CommandBuffer,
+    #[resource] combatant_textures: &CombatantTextures,
+) {
     let mut enemies_to_spawn = thread_rng().gen_range(1..=3);
 
     (0..enemies_to_spawn).for_each(|idx| {
         let enemy_type: i32 = thread_rng().gen_range(0..3);
-        match enemy_type { 
+        match enemy_type {
             0 => {
                 spawn_orc(commands, combatant_textures);
-            },
-            1 => {
-                spawn_crow(commands, combatant_textures)
-            },
-            _ => {
-                spawn_spider(commands, combatant_textures)
             }
+            1 => spawn_crow(commands, combatant_textures),
+            _ => spawn_spider(commands, combatant_textures),
         }
     });
 }
@@ -226,5 +228,20 @@ fn spawn_random_enemies(commands: &mut CommandBuffer, #[resource] combatant_text
 #[system]
 fn begin_battle(#[resource] game_state: &mut GameState, #[resource] turn_state: &mut TurnState) {
     *game_state = GameState::InBattle;
-    *turn_state = TurnState::StartOfTurn{ round_number: 1 }
+    *turn_state = TurnState::StartOfTurn { round_number: 1 }
+}
+
+#[system]
+fn spawn_starter_deck(
+    #[resource] zones: &mut CardZones,
+    #[resource] db: &mut CardDB,
+    commands: &mut CommandBuffer,
+) {
+    (0..5).for_each(|_| {
+        add_card_to_deck(commands, zones, db, 1);
+    });
+
+    (0..4).for_each(|_| add_card_to_deck(commands, zones, db, 2));
+
+    add_card_to_deck(commands, zones, db, 3);
 }

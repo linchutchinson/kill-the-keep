@@ -65,6 +65,7 @@ impl State {
         resources.insert(GameState::Initialization);
         resources.insert(TurnState::StartOfTurn { round_number: 1 });
         resources.insert(Energy::new());
+        resources.insert(CardDB::new());
 
         Self {
             world,
@@ -93,6 +94,7 @@ async fn main() {
 
     let mut state = State::new();
 
+    /*
     (0..5).for_each(|_| {
         spawn_strike(&mut state.world, &mut state.resources);
     });
@@ -102,6 +104,7 @@ async fn main() {
     });
 
     spawn_bash(&mut state.world, &mut state.resources);
+    */
 
     loop {
         let current_state = state.resources.get::<GameState>().unwrap().clone();
