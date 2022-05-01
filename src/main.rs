@@ -1,43 +1,45 @@
-mod components;
-mod spawner;
-mod systems;
-mod hand_helpers;
+mod card_data;
 mod card_zones;
-mod ui_textures;
+mod combatant_textures;
+mod components;
 mod enemy_position_helpers;
-mod turn_state;
 mod energy;
 mod game_state;
-mod combatant_textures;
+mod hand_helpers;
+mod spawner;
+mod systems;
+mod turn_state;
+mod ui_textures;
 
 mod prelude {
-    pub use macroquad::prelude::*;
-    pub use macroquad::input::*;
-    pub use legion::*;
-    pub use legion::world::SubWorld;
-    pub use legion::systems::CommandBuffer;
     pub use ::rand::prelude::*;
     pub use ::rand::seq::SliceRandom;
+    pub use legion::systems::CommandBuffer;
+    pub use legion::world::SubWorld;
+    pub use legion::*;
+    pub use macroquad::input::*;
+    pub use macroquad::prelude::*;
 
     pub const BG_COLOR: Color = Color::new(58.0 / 255.0, 38.0 / 255.0, 24.0 / 255., 1.0);
     pub const TEXT_COLOR: Color = Color::new(229. / 255., 225. / 255., 220. / 255., 1.0);
 
-    pub const WINDOW_WIDTH : i32 = 1280;
+    pub const WINDOW_WIDTH: i32 = 1280;
 
     pub const CARD_HEIGHT: f32 = 256.0;
     pub const CARD_WIDTH: f32 = CARD_HEIGHT * 2.0 / 3.0;
 
-    pub use crate::components::*;
-    pub use crate::spawner::*;
-    pub use crate::systems::*;
-    pub use crate::hand_helpers::*;
+    pub use crate::card_data::*;
     pub use crate::card_zones::*;
-    pub use crate::ui_textures::*;
+    pub use crate::combatant_textures::*;
+    pub use crate::components::*;
     pub use crate::enemy_position_helpers::*;
-    pub use crate::turn_state::*;
     pub use crate::energy::*;
     pub use crate::game_state::*;
-    pub use crate::combatant_textures::*;
+    pub use crate::hand_helpers::*;
+    pub use crate::spawner::*;
+    pub use crate::systems::*;
+    pub use crate::turn_state::*;
+    pub use crate::ui_textures::*;
 }
 
 use crate::prelude::*;
@@ -61,9 +63,9 @@ impl State {
         resources.insert(UITextures::new());
         resources.insert(CombatantTextures::new());
         resources.insert(GameState::Initialization);
-        resources.insert(TurnState::StartOfTurn{ round_number: 1 });
+        resources.insert(TurnState::StartOfTurn { round_number: 1 });
         resources.insert(Energy::new());
-        
+
         Self {
             world,
             resources,
@@ -81,7 +83,7 @@ fn window_conf() -> Conf {
         window_title: "Kill the Keep".to_owned(),
         window_width: WINDOW_WIDTH,
         window_height: 720,
-        ..Default::default()   
+        ..Default::default()
     }
 }
 
@@ -103,32 +105,41 @@ async fn main() {
 
     loop {
         let current_state = state.resources.get::<GameState>().unwrap().clone();
-        
+
         match current_state {
             GameState::Initialization => {
-                state.initialization_schedule.execute(&mut state.world, &mut state.resources);
-            },
+                state
+                    .initialization_schedule
+                    .execute(&mut state.world, &mut state.resources);
+            }
 
             GameState::InBattle => {
                 let turn_state = state.resources.get::<TurnState>().unwrap().clone();
 
                 match turn_state {
-                    TurnState::StartOfTurn{round_number} => {
-                        state.start_of_turn_schedule.execute(&mut state.world, &mut state.resources);
-                    },
-                    TurnState::PlayerTurn{round_number} => {
-                        state.player_turn_schedule.execute(&mut state.world, &mut state.resources);
-                    },
-                    TurnState::EnemyTurn{round_number} => {
-                        state.enemy_turn_schedule.execute(&mut state.world, &mut state.resources);
-                    },
-                    TurnState::BattleOver{player_victorious} => {
-                        state.end_of_battle_schedule.execute(&mut state.world, &mut state.resources);
+                    TurnState::StartOfTurn { round_number } => {
+                        state
+                            .start_of_turn_schedule
+                            .execute(&mut state.world, &mut state.resources);
+                    }
+                    TurnState::PlayerTurn { round_number } => {
+                        state
+                            .player_turn_schedule
+                            .execute(&mut state.world, &mut state.resources);
+                    }
+                    TurnState::EnemyTurn { round_number } => {
+                        state
+                            .enemy_turn_schedule
+                            .execute(&mut state.world, &mut state.resources);
+                    }
+                    TurnState::BattleOver { player_victorious } => {
+                        state
+                            .end_of_battle_schedule
+                            .execute(&mut state.world, &mut state.resources);
                     }
                 }
             }
         }
-
 
         next_frame().await
     }
