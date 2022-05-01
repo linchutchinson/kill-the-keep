@@ -48,10 +48,12 @@ struct State {
     world: World,
     resources: Resources,
     initialization_schedule: Schedule,
+    start_of_battle_schedule: Schedule,
     start_of_turn_schedule: Schedule,
     player_turn_schedule: Schedule,
     enemy_turn_schedule: Schedule,
     end_of_battle_schedule: Schedule,
+    choose_rewards_schedule: Schedule,
 }
 
 impl State {
@@ -63,7 +65,7 @@ impl State {
         resources.insert(UITextures::new());
         resources.insert(CombatantTextures::new());
         resources.insert(GameState::Initialization);
-        resources.insert(TurnState::StartOfTurn { round_number: 1 });
+        resources.insert(TurnState::StartOfBattle);
         resources.insert(Energy::new());
         resources.insert(CardDB::new());
 
@@ -71,10 +73,12 @@ impl State {
             world,
             resources,
             initialization_schedule: build_initialization_schedule(),
+            start_of_battle_schedule: build_start_of_battle_schedule(),
             start_of_turn_schedule: build_start_of_turn_schedule(),
             player_turn_schedule: build_player_turn_schedule(),
             enemy_turn_schedule: build_enemy_turn_schedule(),
             end_of_battle_schedule: build_end_of_battle_schedule(),
+            choose_rewards_schedule: build_choose_rewards_schedule(),
         }
     }
 }
@@ -94,18 +98,6 @@ async fn main() {
 
     let mut state = State::new();
 
-    /*
-    (0..5).for_each(|_| {
-        spawn_strike(&mut state.world, &mut state.resources);
-    });
-
-    (0..4).for_each(|_| {
-        spawn_defend(&mut state.world, &mut state.resources);
-    });
-
-    spawn_bash(&mut state.world, &mut state.resources);
-    */
-
     loop {
         let current_state = state.resources.get::<GameState>().unwrap().clone();
 
@@ -120,6 +112,12 @@ async fn main() {
                 let turn_state = state.resources.get::<TurnState>().unwrap().clone();
 
                 match turn_state {
+                    TurnState::StartOfBattle => {
+                        state
+                            .start_of_battle_schedule
+                            .execute(&mut state.world, &mut state.resources);
+                    }
+
                     TurnState::StartOfTurn { round_number } => {
                         state
                             .start_of_turn_schedule
@@ -142,6 +140,10 @@ async fn main() {
                     }
                 }
             }
+
+            GameState::ChooseRewards => state
+                .choose_rewards_schedule
+                .execute(&mut state.world, &mut state.resources),
         }
 
         next_frame().await

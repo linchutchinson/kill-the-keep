@@ -120,3 +120,7 @@ pub struct Weakness;
 pub struct InflictWeakness {
     pub amount: i32,
 }
+
+pub struct CardChoice {
+    pub cards: Vec<CardData>,
+}

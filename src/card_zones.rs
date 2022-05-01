@@ -3,7 +3,7 @@ use crate::prelude::*;
 pub struct CardZones {
     pub hand: Vec<Entity>,
     pub deck: Vec<Entity>,
-    pub discard: Vec<Entity>
+    pub discard: Vec<Entity>,
 }
 
 impl CardZones {
@@ -14,5 +14,10 @@ impl CardZones {
             discard: Vec::new(),
         }
     }
-}
 
+    pub fn clear_all(&mut self) {
+        self.hand = Vec::new();
+        self.deck = Vec::new();
+        self.discard = Vec::new();
+    }
+}

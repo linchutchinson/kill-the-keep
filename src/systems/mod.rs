@@ -2,6 +2,7 @@ use crate::prelude::*;
 use legion::systems::Builder;
 
 mod block;
+mod card_drafting;
 mod card_effect_messages;
 mod card_playing;
 mod card_selection;
@@ -19,6 +20,13 @@ pub fn build_initialization_schedule() -> Schedule {
     Schedule::builder()
         .add_system(spawn_starter_deck_system())
         .add_system(spawn_initial_combatants_system())
+        .add_system(spawn_random_enemies_system())
+        .add_system(begin_battle_system())
+        .build()
+}
+
+pub fn build_start_of_battle_schedule() -> Schedule {
+    Schedule::builder()
         .add_system(spawn_random_enemies_system())
         .add_system(begin_battle_system())
         .build()
@@ -111,9 +119,16 @@ pub fn build_enemy_turn_schedule() -> Schedule {
 }
 
 pub fn build_end_of_battle_schedule() -> Schedule {
+    Schedule::builder().add_system(end_battle_system()).build()
+}
+
+//Card Drafting
+pub fn build_choose_rewards_schedule() -> Schedule {
     Schedule::builder()
-        .add_system(restart_battle_system())
-        .add_system(spawn_random_enemies_system())
+        .add_thread_local(drawing::draw_bg_system())
+        .add_thread_local(card_drafting::draw_card_choices_system())
+        .flush()
+        .add_system(card_drafting::select_card_to_draft_system())
         .build()
 }
 
@@ -167,9 +182,12 @@ fn position_enemies(ecs: &mut SubWorld) {
 #[system]
 #[read_component(Player)]
 #[read_component(Enemy)]
-fn restart_battle(
+fn end_battle(
     ecs: &mut SubWorld,
     #[resource] turn_state: &mut TurnState,
+    #[resource] game_state: &mut GameState,
+    #[resource] zones: &mut CardZones,
+    #[resource] db: &mut CardDB,
     commands: &mut CommandBuffer,
     #[resource] combatant_tex: &CombatantTextures,
 ) {
@@ -192,10 +210,16 @@ fn restart_battle(
             commands.remove(*entity);
         });
 
-        spawn_hero(commands, combatant_tex);
-    }
+        zones.clear_all();
+        *game_state = GameState::Initialization;
+    } else {
+        let rewards = db
+            .draw_random(Rarity::Common, 3)
+            .expect("Failed to draw random cards from database.");
 
-    *turn_state = TurnState::StartOfTurn { round_number: 1 };
+        commands.push(((), CardChoice { cards: rewards }));
+        *game_state = GameState::ChooseRewards;
+    }
 }
 
 #[system]

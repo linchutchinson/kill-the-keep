@@ -1,6 +1,10 @@
 pub use crate::prelude::*;
 use rusqlite::Connection;
 
+pub enum Rarity {
+    Common,
+}
+
 pub struct CardDB {
     connection: Connection,
 }
@@ -34,75 +38,107 @@ impl CardDB {
 
         card_iter.nth(0).unwrap().unwrap()
     }
+
+    pub fn draw_random(
+        &mut self,
+        rarity: Rarity,
+        count: i32,
+    ) -> Result<Vec<CardData>, rusqlite::Error> {
+        let rarity_code = "C";
+
+        let mut stmt = self
+            .connection
+            .prepare(&format!(
+                "SELECT CardID, Name, Cost, Effects FROM Cards WHERE Rarity=\"{}\" ORDER BY RANDOM() LIMIT {}",
+                rarity_code,
+                count
+            ))
+            .unwrap();
+
+        let card_iter = stmt
+            .query_map([], |row| {
+                Ok(CardData {
+                    id: row.get(0).unwrap(),
+                    name: row.get(1).unwrap(),
+                    cost: row.get(2).unwrap(),
+                    effects: row.get(3).unwrap(),
+                })
+            })
+            .unwrap();
+
+        card_iter.collect::<Result<Vec<CardData>, rusqlite::Error>>()
+    }
 }
 
 #[derive(Debug, Default, PartialEq)]
 pub struct CardData {
     id: i32,
-    name: String,
+    pub name: String,
     cost: Option<i32>,
     effects: String,
 }
 
 impl CardData {
-    pub fn spawn_as_entity(&mut self, commands: &mut CommandBuffer) -> Result<Entity, String> {
-        if let Ok(card_effects) = get_card_effects_from_text(self.effects.to_owned()) {
-            let entity = commands.push((
-                (),
-                Card {
-                    name: self.name.to_owned(),
-                },
-            ));
+    pub fn spawn_as_entity(&self, commands: &mut CommandBuffer) -> Result<Entity, String> {
+        let card_effects =
+            get_card_effects_from_text(self.effects.to_owned()).expect("Failed to parse Card Text");
+        let entity = commands.push((
+            (),
+            Card {
+                name: self.name.to_owned(),
+            },
+        ));
 
-            if let Some(cost) = self.cost {
-                commands.add_component(entity, EnergyCost { amount: cost });
-            }
+        if let Some(cost) = self.cost {
+            commands.add_component(entity, EnergyCost { amount: cost });
+        }
 
-            let mut is_targeted = false;
+        let mut is_targeted = false;
 
-            card_effects.iter().for_each(|effect| match effect {
-                CardEffect::DealDamage(target, amount) => match target {
-                    Target::Hero => {
-                        eprintln!("Effect Not Implemented: Self Damage");
-                    }
-
-                    Target::Enemy => {
-                        is_targeted = true;
-                        commands.add_component(entity, DealsDamage { amount: *amount });
-                    }
-                },
-
-                CardEffect::Block(amount) => {
-                    commands.add_component(entity, AddsBlock { amount: *amount })
+        card_effects.iter().for_each(|effect| match effect {
+            CardEffect::DealDamage(target, amount) => match target {
+                Target::Hero => {
+                    eprintln!("Effect Not Implemented: Self Damage");
                 }
 
-                CardEffect::InflictVulnerability(target, amount) => match target {
-                    Target::Enemy => {
-                        is_targeted = true;
-                        commands.add_component(entity, InflictVulnerability { amount: *amount });
-                    }
+                Target::Enemy => {
+                    is_targeted = true;
+                    commands.add_component(entity, DealsDamage { amount: *amount });
+                }
 
-                    Target::Hero => {
-                        eprintln!("Effect Not Implemented: Self Inflicted Vulnerability")
-                    }
-                },
+                Target::AllEnemies => {
+                    eprintln!("Effect Not Implemented: AOE Damage");
+                }
+            },
+
+            CardEffect::Block(amount) => {
+                commands.add_component(entity, AddsBlock { amount: *amount })
+            }
+
+            CardEffect::InflictVulnerability(target, amount) => match target {
+                Target::Enemy => {
+                    is_targeted = true;
+                    commands.add_component(entity, InflictVulnerability { amount: *amount });
+                }
 
                 _ => {
-                    eprintln!(
-                        "Unimplemented Card Effect!\n{:?}\nIn Card: {}",
-                        effect, self.name
-                    )
+                    eprintln!("Effect Not Implemented for Vulnerability on Target {target:?}")
                 }
-            });
+            },
 
-            if is_targeted {
-                commands.add_component(entity, SelectTarget);
+            _ => {
+                eprintln!(
+                    "Unimplemented Card Effect!\n{:?}\nIn Card: {}",
+                    effect, self.name
+                )
             }
+        });
 
-            Ok(entity)
-        } else {
-            Err("Failed to Parse".to_string())
+        if is_targeted {
+            commands.add_component(entity, SelectTarget);
         }
+
+        Ok(entity)
     }
 }
 
@@ -110,13 +146,16 @@ impl CardData {
 enum Target {
     Hero,
     Enemy,
+    AllEnemies,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 enum CardEffect {
     DealDamage(Target, i32),
+    DealBlockAsDamage(Target),
     Block(i32),
     InflictVulnerability(Target, i32),
+    AddIDToDiscard(i32),
 }
 
 impl CardEffect {
@@ -140,6 +179,17 @@ impl CardEffect {
                             ));
                         }
 
+                        "deal_to_all" => {
+                            return Ok(CardEffect::DealDamage(
+                                Target::AllEnemies,
+                                params.nth(0).unwrap(),
+                            ));
+                        }
+
+                        "deal_block" => {
+                            return Ok(CardEffect::DealBlockAsDamage(Target::Enemy));
+                        }
+
                         "block" => {
                             return Ok(CardEffect::Block(params.nth(0).unwrap()));
                         }
@@ -149,6 +199,10 @@ impl CardEffect {
                                 Target::Enemy,
                                 params.nth(0).unwrap(),
                             ))
+                        }
+
+                        "add_to_discard" => {
+                            return Ok(CardEffect::AddIDToDiscard(params.nth(0).unwrap()))
                         }
 
                         _ => return Err(format!("could not parse command: {}", keyword)),
