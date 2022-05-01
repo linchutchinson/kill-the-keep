@@ -4,9 +4,13 @@
 
 [ ] Map?
 [X] BUG: Enemy Intents persist between combats and you get attacked by ghosts
-[ ] Make more enemy types
+[X] Make more enemy types
 [ ] Relics?
-[ ] Card Drafting?
+[X] Card Drafting?
+
+[ ] BUG: Cards aren't properly placed into the deck at the start of battle.
+[ ] BUG: Temporary Cards created by Anger for example are not removed at the end of battle (Add a tag to them and remove all with tag at end of battle)
+[ ] Implement the rest of the common cards.
 
 //
 

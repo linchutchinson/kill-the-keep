@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use legion::systems::Builder;
 
+mod add_card_to_zone;
 mod block;
 mod card_drafting;
 mod card_effect_messages;
@@ -81,6 +82,7 @@ pub fn build_player_turn_schedule() -> Schedule {
         .add_system(card_effect_messages::send_card_damage_system())
         .add_system(card_effect_messages::send_card_block_system())
         .add_system(card_effect_messages::send_card_vulnerability_system())
+        .add_system(card_effect_messages::send_card_creation_system())
         .add_system(card_playing::play_card_system())
         .flush();
 
@@ -153,6 +155,7 @@ fn add_combat_resolution_systems_to_builder(builder: &mut Builder) -> &mut Build
         .flush()
         .add_system(damage::deal_damage_system())
         .flush()
+        .add_system(add_card_to_zone::handle_add_card_messages_system())
         .add_system(status_effects::apply_vulnerability_system())
         .add_system(status_effects::apply_weakness_system())
 }

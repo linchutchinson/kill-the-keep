@@ -126,6 +126,14 @@ impl CardData {
                 }
             },
 
+            CardEffect::AddIDToDiscard(id) => commands.add_component(
+                entity,
+                AddCardToZone {
+                    zone: CardZone::Discard,
+                    id: *id,
+                },
+            ),
+
             _ => {
                 eprintln!(
                     "Unimplemented Card Effect!\n{:?}\nIn Card: {}",

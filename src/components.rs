@@ -124,3 +124,19 @@ pub struct InflictWeakness {
 pub struct CardChoice {
     pub cards: Vec<CardData>,
 }
+
+#[derive(Copy, Clone, Debug)]
+pub enum CardZone {
+    Deck,
+    Hand,
+    Discard,
+    Exhaust,
+}
+
+pub struct Message;
+
+#[derive(Copy, Clone)]
+pub struct AddCardToZone {
+    pub zone: CardZone,
+    pub id: i32,
+}
