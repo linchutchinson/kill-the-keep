@@ -1,5 +1,8 @@
 use crate::prelude::*;
 use legion::systems::Builder;
+use serde::Deserialize;
+use std::fs;
+use std::io::prelude::*;
 
 mod add_card_to_zone;
 mod block;
@@ -262,11 +265,15 @@ fn spawn_starter_deck(
     #[resource] db: &mut CardDB,
     commands: &mut CommandBuffer,
 ) {
-    (0..5).for_each(|_| {
-        add_card_to_deck(commands, zones, db, 1);
-    });
+    let mut starter_deck_file =
+        fs::File::open("assets/starter_deck.yaml").expect("Failed to find starter deck file.");
+    let mut file_string = String::new();
+    starter_deck_file
+        .read_to_string(&mut file_string)
+        .expect("Failed to read text in starter deck file.");
+    let card_indexes: Vec<i32> = serde_yaml::from_str(&file_string).unwrap();
 
-    (0..4).for_each(|_| add_card_to_deck(commands, zones, db, 2));
-
-    add_card_to_deck(commands, zones, db, 3);
+    card_indexes
+        .iter()
+        .for_each(|idx| add_card_to_deck(commands, zones, db, *idx))
 }
