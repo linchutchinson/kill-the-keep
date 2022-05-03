@@ -6,7 +6,7 @@ use crate::prelude::*;
 pub fn send_card_damage(
     ecs: &mut SubWorld,
     message: &PlayCardMessage,
-    targeted_message: &PlayTargetedCardMessage,
+    targeted: &Targeted,
     commands: &mut CommandBuffer,
 ) {
     let card_ref = ecs.entry_ref(message.card).unwrap();
@@ -14,9 +14,13 @@ pub fn send_card_damage(
     if let Ok(damage) = card_ref.get_component::<DealsDamage>() {
         commands.push((
             (),
-            DealDamageMessage {
+            Message {
                 source: message.source,
-                target: targeted_message.target,
+            },
+            Targeted {
+                target: targeted.target,
+            },
+            DealsDamage {
                 amount: damage.amount,
             },
         ));
@@ -25,30 +29,67 @@ pub fn send_card_damage(
 
 #[system(for_each)]
 #[read_component(Card)]
-#[read_component(InflictVulnerability)]
-pub fn send_card_vulnerability(
+#[read_component(DealsDamage)]
+#[read_component(AllEnemies)]
+#[read_component(Enemy)]
+pub fn send_card_aoe_damage(
     ecs: &mut SubWorld,
     message: &PlayCardMessage,
-    targeted_message: &PlayTargetedCardMessage,
+    commands: &mut CommandBuffer,
+) {
+    let mut enemy_query = <(Entity, &Enemy)>::query();
+    let card_ref = ecs.entry_ref(message.card).unwrap();
+
+    if let Ok(damage) = card_ref.get_component::<DealsDamage>() {
+        if let Ok(_) = card_ref.get_component::<AllEnemies>() {
+            enemy_query.iter(ecs).for_each(|(enemy_entity, _)| {
+                commands.push((
+                    (),
+                    Message {
+                        source: message.source,
+                    },
+                    Targeted {
+                        target: *enemy_entity,
+                    },
+                    DealsDamage {
+                        amount: damage.amount,
+                    },
+                ));
+            })
+        }
+    }
+}
+
+#[system(for_each)]
+#[read_component(Card)]
+#[read_component(InflictsStatus)]
+pub fn send_card_status(
+    ecs: &mut SubWorld,
+    message: &PlayCardMessage,
+    targeted: &Targeted,
     commands: &mut CommandBuffer,
 ) {
     let card_ref = ecs.entry_ref(message.card).unwrap();
 
-    if let Ok(vuln) = card_ref.get_component::<InflictVulnerability>() {
+    if let Ok(status_to_inflict) = card_ref.get_component::<InflictsStatus>() {
         commands.push((
             (),
-            ApplyVulnerabilityMessage {
-                target: targeted_message.target,
-                amount: vuln.amount,
+            Message {
+                source: message.source,
+            },
+            Targeted {
+                target: targeted.target,
+            },
+            InflictsStatus {
+                status: status_to_inflict.status,
+                amount: status_to_inflict.amount,
             },
         ));
     }
 }
 
 #[system(for_each)]
-#[read_component(Card)]
 #[read_component(AddsBlock)]
-#[read_component(Player)]
 pub fn send_card_block(
     ecs: &mut SubWorld,
     message: &PlayCardMessage,
@@ -57,15 +98,15 @@ pub fn send_card_block(
     let card_ref = ecs.entry_ref(message.card).unwrap();
 
     if let Ok(block) = card_ref.get_component::<AddsBlock>() {
-        if let Some((player_entity, _)) = <(Entity, &Player)>::query().iter(ecs).nth(0) {
-            commands.push((
-                (),
-                AddBlockMessage {
-                    target: *player_entity,
-                    amount: block.amount,
-                },
-            ));
-        }
+        commands.push((
+            (),
+            Message {
+                source: message.source,
+            },
+            AddsBlock {
+                amount: block.amount,
+            },
+        ));
     }
 }
 
@@ -81,6 +122,12 @@ pub fn send_card_creation(
     let card_ref = ecs.entry_ref(message.card).unwrap();
 
     if let Ok(card_creation) = card_ref.get_component::<AddCardToZone>() {
-        commands.push(((), Message, *card_creation));
+        commands.push((
+            (),
+            Message {
+                source: message.source,
+            },
+            *card_creation,
+        ));
     }
 }

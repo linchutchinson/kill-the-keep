@@ -52,7 +52,7 @@ pub fn select_card_targets(
                         source: *player_entity,
                         card: *card_entity,
                     },
-                    PlayTargetedCardMessage { target: *target },
+                    Targeted { target: *target },
                 ));
             }
         } else {

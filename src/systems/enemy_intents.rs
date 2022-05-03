@@ -66,32 +66,8 @@ pub fn create_deal_damage_intents(
 }
 
 #[system(for_each)]
-#[read_component(InflictVulnerability)]
-pub fn create_inflict_vulnerability_intents(
-    ecs: &mut SubWorld,
-    entity: &Entity,
-    message: &TakeEnemyActionMessage,
-    commands: &mut CommandBuffer,
-) {
-    let selected_action = ecs.entry_ref(message.action).unwrap();
-
-    if let Ok(inflict_vulnerability) = selected_action.get_component::<InflictVulnerability>() {
-        commands.push((
-            (),
-            EnemyIntent {
-                enemy: message.enemy,
-            },
-            InflictsStatus,
-            InflictVulnerability {
-                amount: inflict_vulnerability.amount,
-            },
-        ));
-    }
-}
-
-#[system(for_each)]
 #[read_component(InflictWeakness)]
-pub fn create_inflict_weakness_intents(
+pub fn create_status_intents(
     ecs: &mut SubWorld,
     entity: &Entity,
     message: &TakeEnemyActionMessage,
@@ -99,15 +75,15 @@ pub fn create_inflict_weakness_intents(
 ) {
     let selected_action = ecs.entry_ref(message.action).unwrap();
 
-    if let Ok(inflict_vulnerability) = selected_action.get_component::<InflictWeakness>() {
+    if let Ok(status) = selected_action.get_component::<InflictsStatus>() {
         commands.push((
             (),
             EnemyIntent {
                 enemy: message.enemy,
             },
-            InflictsStatus,
-            InflictWeakness {
-                amount: inflict_vulnerability.amount,
+            InflictsStatus {
+                status: status.status,
+                amount: status.amount,
             },
         ));
     }
@@ -226,7 +202,7 @@ pub fn draw_enemy_intents(
 
 #[system(for_each)]
 #[read_component(Player)]
-pub fn resolve_enemy_intents(
+pub fn resolve_enemy_damage_intents(
     ecs: &mut SubWorld,
     entity: &Entity,
     intent: &EnemyIntent,
@@ -236,9 +212,13 @@ pub fn resolve_enemy_intents(
     if let Some((player_entity, _)) = <(Entity, &Player)>::query().iter(ecs).nth(0) {
         commands.push((
             (),
-            DealDamageMessage {
+            Message {
                 source: intent.enemy,
+            },
+            Targeted {
                 target: *player_entity,
+            },
+            DealsDamage {
                 amount: damage.amount,
             },
         ));
@@ -247,46 +227,29 @@ pub fn resolve_enemy_intents(
 
 #[system(for_each)]
 #[read_component(Player)]
-pub fn resolve_enemy_invulnerability_intents(
+pub fn resolve_enemy_status_intents(
     ecs: &mut SubWorld,
     entity: &Entity,
     _: &EnemyIntent,
-    vuln: &InflictVulnerability,
+    inflict_status: &InflictsStatus,
     commands: &mut CommandBuffer,
 ) {
     if let Some((player_entity, _)) = <(Entity, &Player)>::query().iter(ecs).nth(0) {
         commands.push((
             (),
-            ApplyVulnerabilityMessage {
+            Message { source: *entity },
+            Targeted {
                 target: *player_entity,
-                amount: vuln.amount,
+            },
+            InflictsStatus {
+                status: inflict_status.status,
+                amount: inflict_status.amount,
             },
         ));
     }
 }
 
 #[system(for_each)]
-#[read_component(Player)]
-pub fn resolve_enemy_weakness_intents(
-    ecs: &mut SubWorld,
-    entity: &Entity,
-    _: &EnemyIntent,
-    weak: &InflictWeakness,
-    commands: &mut CommandBuffer,
-) {
-    if let Some((player_entity, _)) = <(Entity, &Player)>::query().iter(ecs).nth(0) {
-        commands.push((
-            (),
-            ApplyWeaknessMessage {
-                target: *player_entity,
-                amount: weak.amount,
-            },
-        ));
-    }
-}
-
-#[system(for_each)]
-#[read_component(Player)]
 pub fn resolve_enemy_block_intents(
     ecs: &mut SubWorld,
     entity: &Entity,
@@ -294,15 +257,13 @@ pub fn resolve_enemy_block_intents(
     block: &AddsBlock,
     commands: &mut CommandBuffer,
 ) {
-    if let Some((player_entity, _)) = <(Entity, &Player)>::query().iter(ecs).nth(0) {
-        commands.push((
-            (),
-            AddBlockMessage {
-                target: intent.enemy,
-                amount: block.amount,
-            },
-        ));
-    }
+    commands.push((
+        (),
+        Message { source: *entity },
+        AddsBlock {
+            amount: block.amount,
+        },
+    ));
 }
 
 #[system(for_each)]

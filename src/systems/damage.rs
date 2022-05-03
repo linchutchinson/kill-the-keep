@@ -5,15 +5,25 @@ use crate::prelude::*;
 #[read_component(DamageMultiplier)]
 #[read_component(IncomingEffect)]
 #[read_component(OutgoingEffect)]
-pub fn apply_damage_multipliers(ecs: &mut SubWorld, message: &mut DealDamageMessage) {
+pub fn apply_damage_multipliers(
+    ecs: &mut SubWorld,
+    message: &Message,
+    targeted: &Targeted,
+    damage: &mut DealsDamage,
+) {
     let mut status_query = <(Entity, &StatusEffect, &DamageMultiplier)>::query();
-    let mut final_damage = message.amount;
+    let mut final_damage = damage.amount;
 
     //Outgoing Status
     status_query
         .iter(ecs)
-        .filter(|(_, status, _)| { status.target == message.source })
-        .filter(|(entity, _, _)| { ecs.entry_ref(**entity).unwrap().get_component::<OutgoingEffect>().is_ok() })
+        .filter(|(_, status, _)| status.target == message.source)
+        .filter(|(entity, _, _)| {
+            ecs.entry_ref(**entity)
+                .unwrap()
+                .get_component::<OutgoingEffect>()
+                .is_ok()
+        })
         .for_each(|(_, _, damage_multiplier)| {
             final_damage = (damage_multiplier.multiplier * final_damage as f32) as i32;
         });
@@ -21,23 +31,34 @@ pub fn apply_damage_multipliers(ecs: &mut SubWorld, message: &mut DealDamageMess
     //Incoming Status
     status_query
         .iter(ecs)
-        .filter(|(_, status, _)| { status.target == message.target })
-        .filter(|(entity, _, _)| { ecs.entry_ref(**entity).unwrap().get_component::<IncomingEffect>().is_ok() })
+        .filter(|(_, status, _)| status.target == targeted.target)
+        .filter(|(entity, _, _)| {
+            ecs.entry_ref(**entity)
+                .unwrap()
+                .get_component::<IncomingEffect>()
+                .is_ok()
+        })
         .for_each(|(_, _, damage_multiplier)| {
             final_damage = (damage_multiplier.multiplier * final_damage as f32) as i32;
         });
 
-    message.amount = final_damage;
-
+    damage.amount = final_damage;
 }
 
 #[system(for_each)]
 #[write_component(Health)]
-pub fn deal_damage(ecs: &mut SubWorld, entity: &Entity, message: &DealDamageMessage, commands: &mut CommandBuffer) {
-    let mut target_ref = ecs.entry_mut(message.target).unwrap();
+pub fn deal_damage(
+    ecs: &mut SubWorld,
+    entity: &Entity,
+    message: &Message,
+    targeted: &Targeted,
+    damage: &DealsDamage,
+    commands: &mut CommandBuffer,
+) {
+    let mut target_ref = ecs.entry_mut(targeted.target).unwrap();
 
     if let Ok(health) = target_ref.get_component_mut::<Health>() {
-        let mut damage_to_deal = message.amount;
+        let mut damage_to_deal = damage.amount;
 
         if health.block >= damage_to_deal {
             health.block -= damage_to_deal;
@@ -47,6 +68,6 @@ pub fn deal_damage(ecs: &mut SubWorld, entity: &Entity, message: &DealDamageMess
             health.current -= damage_to_deal;
         }
     }
-    
+
     commands.remove(*entity);
 }

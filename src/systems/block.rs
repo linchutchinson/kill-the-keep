@@ -3,18 +3,19 @@ use crate::prelude::*;
 #[system(for_each)]
 #[write_component(Health)]
 pub fn apply_block(
-    ecs: &mut SubWorld, 
-    entity: &Entity, 
-    block_message: &AddBlockMessage, 
-    commands: &mut CommandBuffer
+    ecs: &mut SubWorld,
+    entity: &Entity,
+    message: &Message,
+    block: &AddsBlock,
+    commands: &mut CommandBuffer,
 ) {
-        let mut target_ref = ecs.entry_mut(block_message.target).unwrap();
+    let mut target_ref = ecs.entry_mut(message.source).unwrap();
 
-        if let Ok(mut health) = target_ref.get_component_mut::<Health>() {
-            health.block += block_message.amount;
-        }
+    if let Ok(mut health) = target_ref.get_component_mut::<Health>() {
+        health.block += block.amount;
+    }
 
-        commands.remove(*entity);
+    commands.remove(*entity);
 }
 
 #[system(for_each)]

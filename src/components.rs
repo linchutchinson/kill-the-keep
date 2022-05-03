@@ -18,6 +18,7 @@ pub struct Sprite {
 
 pub struct Card {
     pub name: String,
+    pub card_type: CardType,
 }
 
 pub struct SelectTarget;
@@ -27,10 +28,6 @@ pub struct DealsDamage {
 }
 
 pub struct AddsBlock {
-    pub amount: i32,
-}
-
-pub struct InflictVulnerability {
     pub amount: i32,
 }
 
@@ -45,39 +42,30 @@ pub struct PlayCardMessage {
     pub source: Entity,
 }
 
-pub struct PlayTargetedCardMessage {
+pub struct Targeted {
     pub target: Entity,
 }
+
+pub struct AllEnemies;
 
 pub struct EnemyIntent {
     pub enemy: Entity,
 }
 
-pub struct DealDamageMessage {
-    pub source: Entity,
-    pub target: Entity,
-    pub amount: i32,
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum Status {
+    Vulnerability,
+    Weakness,
 }
 
-pub struct InflictsStatus;
-
-pub struct AddBlockMessage {
-    pub target: Entity,
-    pub amount: i32,
-}
-
-pub struct ApplyVulnerabilityMessage {
-    pub target: Entity,
-    pub amount: i32,
-}
-
-pub struct ApplyWeaknessMessage {
-    pub target: Entity,
+pub struct InflictsStatus {
+    pub status: Status,
     pub amount: i32,
 }
 
 pub struct StatusEffect {
     pub target: Entity,
+    pub status_type: Status,
 }
 
 pub struct Duration {
@@ -133,10 +121,28 @@ pub enum CardZone {
     Exhaust,
 }
 
-pub struct Message;
+pub struct Message {
+    pub source: Entity,
+}
 
 #[derive(Copy, Clone)]
 pub struct AddCardToZone {
     pub zone: CardZone,
     pub id: i32,
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum CardType {
+    Attack,
+    Skill,
+    Power,
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum Requirement {
+    AllCardsInHandAre(CardType),
+}
+
+pub struct PlayConditions {
+    pub requirements: Vec<Requirement>,
 }

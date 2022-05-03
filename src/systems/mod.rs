@@ -46,8 +46,7 @@ pub fn build_start_of_turn_schedule() -> Schedule {
         .add_system(enemy_intents::create_enemy_intents_system())
         .flush()
         .add_system(enemy_intents::create_deal_damage_intents_system())
-        .add_system(enemy_intents::create_inflict_vulnerability_intents_system())
-        .add_system(enemy_intents::create_inflict_weakness_intents_system())
+        .add_system(enemy_intents::create_status_intents_system())
         .add_system(enemy_intents::create_block_intents_system())
         .add_system(energy::refill_energy_system())
         .add_system(block::clear_player_block_system())
@@ -80,8 +79,9 @@ pub fn build_player_turn_schedule() -> Schedule {
         .add_system(card_selection::select_cards_system())
         .flush()
         .add_system(card_effect_messages::send_card_damage_system())
+        .add_system(card_effect_messages::send_card_aoe_damage_system())
         .add_system(card_effect_messages::send_card_block_system())
-        .add_system(card_effect_messages::send_card_vulnerability_system())
+        .add_system(card_effect_messages::send_card_status_system())
         .add_system(card_effect_messages::send_card_creation_system())
         .add_system(card_playing::play_card_system())
         .flush();
@@ -106,9 +106,8 @@ pub fn build_enemy_turn_schedule() -> Schedule {
     add_render_systems_to_builder(&mut builder);
 
     builder
-        .add_system(enemy_intents::resolve_enemy_intents_system())
-        .add_system(enemy_intents::resolve_enemy_invulnerability_intents_system())
-        .add_system(enemy_intents::resolve_enemy_weakness_intents_system())
+        .add_system(enemy_intents::resolve_enemy_damage_intents_system())
+        .add_system(enemy_intents::resolve_enemy_status_intents_system())
         .add_system(enemy_intents::resolve_enemy_block_intents_system())
         .flush();
 
@@ -156,8 +155,7 @@ fn add_combat_resolution_systems_to_builder(builder: &mut Builder) -> &mut Build
         .add_system(damage::deal_damage_system())
         .flush()
         .add_system(add_card_to_zone::handle_add_card_messages_system())
-        .add_system(status_effects::apply_vulnerability_system())
-        .add_system(status_effects::apply_weakness_system())
+        .add_system(status_effects::apply_status_system())
 }
 
 #[system(for_each)]

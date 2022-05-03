@@ -21,7 +21,10 @@ pub fn spawn_orc(commands: &mut CommandBuffer, combatant_tex: &CombatantTextures
         (),
         EnemyActionOption,
         DamageRange { min: 10, max: 14 },
-        InflictVulnerability { amount: 2 },
+        InflictsStatus {
+            status: Status::Vulnerability,
+            amount: 2,
+        },
     ));
     let block = commands.push(((), EnemyActionOption, BlockRange { min: 5, max: 8 }));
 
@@ -49,7 +52,10 @@ pub fn spawn_spider(commands: &mut CommandBuffer, combatant_tex: &CombatantTextu
         (),
         EnemyActionOption,
         DamageRange { min: 5, max: 10 },
-        InflictWeakness { amount: 2 },
+        InflictsStatus {
+            status: Status::Weakness,
+            amount: 2,
+        },
     ));
     let block = commands.push(((), EnemyActionOption, BlockRange { min: 3, max: 6 }));
 

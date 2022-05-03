@@ -4,6 +4,7 @@ use crate::prelude::*;
 #[read_component(Card)]
 #[read_component(Selected)]
 #[read_component(EnergyCost)]
+#[read_component(PlayConditions)]
 pub fn select_cards(
     ecs: &mut SubWorld,
     commands: &mut CommandBuffer,
@@ -53,7 +54,37 @@ pub fn select_cards(
             .get_component::<EnergyCost>()
         {
             if energy.current >= energy_cost.amount && is_mouse_button_pressed(MouseButton::Left) {
-                commands.add_component(*hovered_card, Selected);
+                let mut requirements_met = true;
+                if let Ok(conditions) = ecs
+                    .entry_ref(*hovered_card)
+                    .unwrap()
+                    .get_component::<PlayConditions>()
+                {
+                    requirements_met =
+                        conditions
+                            .requirements
+                            .iter()
+                            .all(|requirement| match requirement {
+                                Requirement::AllCardsInHandAre(card_type) => {
+                                    card_zones.hand.iter().all(|card_entity| {
+                                        if let Ok(card) = ecs
+                                            .entry_ref(*card_entity)
+                                            .unwrap()
+                                            .get_component::<Card>()
+                                        {
+                                            card.card_type == *card_type
+                                        } else {
+                                            eprintln!("Something in the hand is not a card?");
+                                            false
+                                        }
+                                    })
+                                }
+                            })
+                }
+
+                if requirements_met {
+                    commands.add_component(*hovered_card, Selected);
+                }
             }
         }
     }
