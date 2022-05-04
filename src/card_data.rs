@@ -134,6 +134,10 @@ impl CardData {
                 commands.add_component(entity, DealsDamage { amount: *amount });
             }
 
+            CardEffect::DealBlockAsDamage => {
+                commands.add_component(entity, DealBlock);
+            }
+
             CardEffect::Block(amount) => {
                 commands.add_component(entity, AddsBlock { amount: *amount })
             }
@@ -191,7 +195,7 @@ enum Target {
 enum CardEffect {
     TargetType(Target),
     DealDamage(i32),
-    DealBlockAsDamage(),
+    DealBlockAsDamage,
     Block(i32),
     InflictStatus(Status, i32),
     AddIDToDiscard(i32),
@@ -220,7 +224,7 @@ impl CardEffect {
                         }
 
                         "deal_block" => {
-                            return Ok(CardEffect::DealBlockAsDamage());
+                            return Ok(CardEffect::DealBlockAsDamage);
                         }
 
                         "block" => {
@@ -285,6 +289,7 @@ mod tests {
             id: 1,
             name: "Strike".to_string(),
             cost: Some(1),
+            card_type: "A".to_string(),
             effects: "deal(6);".to_string(),
         };
 
@@ -297,7 +302,7 @@ mod tests {
         let effect_string = format!("deal({})", amount);
         let actual = CardEffect::from_string(effect_string).unwrap();
 
-        let expected = CardEffect::DealDamage(Target::Enemy, amount);
+        let expected = CardEffect::DealDamage(amount);
         assert_eq!(actual, expected)
     }
 

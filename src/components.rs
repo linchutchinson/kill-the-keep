@@ -27,6 +27,8 @@ pub struct DealsDamage {
     pub amount: i32,
 }
 
+pub struct DealBlock;
+
 pub struct AddsBlock {
     pub amount: i32,
 }
