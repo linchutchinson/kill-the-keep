@@ -290,7 +290,7 @@ mod tests {
             name: "Strike".to_string(),
             cost: Some(1),
             card_type: "A".to_string(),
-            effects: "deal(6);".to_string(),
+            effects: "one_enemy();\ndeal(6);".to_string(),
         };
 
         assert_eq!(actual, expected)
@@ -309,9 +309,9 @@ mod tests {
     #[test]
     fn test_multiple_commands_in_string() {
         let expected = Ok(vec![
-            CardEffect::DealDamage(Target::Enemy, 3),
+            CardEffect::DealDamage(3),
             CardEffect::Block(4),
-            CardEffect::InflictStatus(Target::Enemy, Status::Vulnerability, 5),
+            CardEffect::InflictStatus(Status::Vulnerability, 5),
         ]);
         let effect_string = "deal(3);block(4)\n;\nvuln(5);";
 
