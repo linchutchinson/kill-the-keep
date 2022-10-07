@@ -110,7 +110,7 @@ pub fn add_card_to_deck(
     db: &mut CardDB,
     card_id: i32,
 ) {
-    let mut card_data = db.get_card_from_id(card_id);
+    let card_data = db.get_card_from_id(card_id);
 
     let entity = card_data
         .spawn_as_entity(commands)

@@ -19,13 +19,6 @@ pub fn handle_add_card_messages(
         CardZone::Discard => {
             zones.discard.push(card_entity);
         }
-
-        _ => {
-            eprintln!(
-                "Did not implement adding cards to zone: {:?}",
-                add_card.zone
-            );
-        }
     }
 
     commands.remove(*entity);

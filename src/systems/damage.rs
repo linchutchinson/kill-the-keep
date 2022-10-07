@@ -50,7 +50,7 @@ pub fn apply_damage_multipliers(
 pub fn deal_damage(
     ecs: &mut SubWorld,
     entity: &Entity,
-    message: &Message,
+    _message: &Message,
     targeted: &Targeted,
     damage: &DealsDamage,
     commands: &mut CommandBuffer,

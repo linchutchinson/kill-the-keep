@@ -78,8 +78,6 @@ pub struct DamageMultiplier {
     pub multiplier: f32,
 }
 
-pub struct Vulnerability;
-
 pub struct EnemyActionOption;
 
 pub struct DamageRange {
@@ -105,8 +103,6 @@ pub struct IncomingEffect;
 
 pub struct OutgoingEffect;
 
-pub struct Weakness;
-
 pub struct InflictWeakness {
     pub amount: i32,
 }
@@ -117,10 +113,7 @@ pub struct CardChoice {
 
 #[derive(Copy, Clone, Debug)]
 pub enum CardZone {
-    Deck,
-    Hand,
     Discard,
-    Exhaust,
 }
 
 pub struct Message {

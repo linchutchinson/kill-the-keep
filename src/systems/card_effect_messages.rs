@@ -18,7 +18,7 @@ pub fn send_card_damage(
         damage = Some(damage_cmp.amount);
     }
 
-    if let Ok(deal_block) = card_ref.get_component::<DealBlock>() {
+    if let Ok(_deal_block) = card_ref.get_component::<DealBlock>() {
         let player_ref = ecs.entry_ref(message.source).unwrap();
 
         if let Ok(health) = player_ref.get_component::<Health>() {

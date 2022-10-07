@@ -11,12 +11,11 @@ pub fn calculate_card_center_x(idx: i32, hand_size: i32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use super::*;
 
     #[test]
     fn test_single_card_hand() {
-        let expected = (WINDOW_WIDTH as f32 * 0.5);
+        let expected = WINDOW_WIDTH as f32 * 0.5;
 
         assert_eq!(calculate_card_center_x(0, 1), expected);
     }
@@ -29,5 +28,4 @@ mod tests {
         assert_eq!(calculate_card_center_x(0, 2), first_expected);
         assert_eq!(calculate_card_center_x(1, 2), second_expected);
     }
-
 }

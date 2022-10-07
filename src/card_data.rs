@@ -1,10 +1,6 @@
 pub use crate::prelude::*;
 use rusqlite::Connection;
 
-pub enum Rarity {
-    Common,
-}
-
 pub struct CardDB {
     connection: Connection,
 }
@@ -38,37 +34,6 @@ impl CardDB {
             .unwrap();
 
         card_iter.nth(0).unwrap().unwrap()
-    }
-
-    pub fn draw_random(
-        &mut self,
-        rarity: Rarity,
-        count: i32,
-    ) -> Result<Vec<CardData>, rusqlite::Error> {
-        let rarity_code = "C";
-
-        let mut stmt = self
-            .connection
-            .prepare(&format!(
-                "SELECT CardID, Name, Cost, Effects, Type FROM Cards WHERE Rarity=\"{}\" ORDER BY RANDOM() LIMIT {}",
-                rarity_code,
-                count
-            ))
-            .unwrap();
-
-        let card_iter = stmt
-            .query_map([], |row| {
-                Ok(CardData {
-                    id: row.get(0).unwrap(),
-                    name: row.get(1).unwrap(),
-                    cost: row.get(2).unwrap(),
-                    effects: row.get(3).unwrap(),
-                    card_type: row.get(4).unwrap(),
-                })
-            })
-            .unwrap();
-
-        card_iter.collect::<Result<Vec<CardData>, rusqlite::Error>>()
     }
 }
 
@@ -162,13 +127,6 @@ impl CardData {
 
             CardEffect::Require(requirement) => {
                 requirements.push(*requirement);
-            }
-
-            _ => {
-                eprintln!(
-                    "Unimplemented Card Effect!\n{:?}\nIn Card: {}",
-                    effect, self.name
-                )
             }
         });
 

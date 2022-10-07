@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use legion::systems::Builder;
-use serde::Deserialize;
 use std::fs;
 use std::io::prelude::*;
 
@@ -126,16 +125,6 @@ pub fn build_end_of_battle_schedule() -> Schedule {
     Schedule::builder().add_system(end_battle_system()).build()
 }
 
-//Card Drafting
-pub fn build_choose_rewards_schedule() -> Schedule {
-    Schedule::builder()
-        .add_thread_local(drawing::draw_bg_system())
-        .add_thread_local(card_drafting::draw_card_choices_system())
-        .flush()
-        .add_system(card_drafting::select_card_to_draft_system())
-        .build()
-}
-
 fn add_render_systems_to_builder(builder: &mut Builder) -> &mut Builder {
     builder
         .add_thread_local(drawing::draw_bg_system())
@@ -165,7 +154,7 @@ fn add_combat_resolution_systems_to_builder(builder: &mut Builder) -> &mut Build
 #[read_component(Player)]
 #[read_component(Enemy)]
 #[write_component(Vec2)]
-fn position_heroes(entity: &Entity, pos: &mut Vec2, _: &Player, ecs: &mut SubWorld) {
+fn position_heroes(pos: &mut Vec2, _: &Player) {
     *pos = get_player_pos();
 }
 
@@ -178,7 +167,7 @@ fn position_enemies(ecs: &mut SubWorld) {
     enemy_query
         .iter_mut(ecs)
         .enumerate()
-        .for_each(|(idx, (enemy, mut pos))| {
+        .for_each(|(idx, (_enemy, pos))| {
             *pos = get_enemy_pos(idx as i32);
         });
 }
@@ -191,9 +180,7 @@ fn end_battle(
     #[resource] turn_state: &mut TurnState,
     #[resource] game_state: &mut GameState,
     #[resource] zones: &mut CardZones,
-    #[resource] db: &mut CardDB,
     commands: &mut CommandBuffer,
-    #[resource] combatant_tex: &CombatantTextures,
 ) {
     let player_victorious = match turn_state {
         TurnState::BattleOver { player_victorious } => player_victorious,
@@ -217,12 +204,7 @@ fn end_battle(
         zones.clear_all();
         *game_state = GameState::Initialization;
     } else {
-        let rewards = db
-            .draw_random(Rarity::Common, 3)
-            .expect("Failed to draw random cards from database.");
-
-        commands.push(((), CardChoice { cards: rewards }));
-        *game_state = GameState::ChooseRewards;
+        *turn_state = TurnState::StartOfBattle;
     }
 }
 
@@ -239,9 +221,9 @@ fn spawn_random_enemies(
     commands: &mut CommandBuffer,
     #[resource] combatant_textures: &CombatantTextures,
 ) {
-    let mut enemies_to_spawn = thread_rng().gen_range(1..=3);
+    let enemies_to_spawn = thread_rng().gen_range(1..=3);
 
-    (0..enemies_to_spawn).for_each(|idx| {
+    (0..enemies_to_spawn).for_each(|_| {
         let enemy_type: i32 = thread_rng().gen_range(0..3);
         match enemy_type {
             0 => {

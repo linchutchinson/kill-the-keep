@@ -53,7 +53,6 @@ struct State {
     player_turn_schedule: Schedule,
     enemy_turn_schedule: Schedule,
     end_of_battle_schedule: Schedule,
-    choose_rewards_schedule: Schedule,
 }
 
 impl State {
@@ -78,7 +77,6 @@ impl State {
             player_turn_schedule: build_player_turn_schedule(),
             enemy_turn_schedule: build_enemy_turn_schedule(),
             end_of_battle_schedule: build_end_of_battle_schedule(),
-            choose_rewards_schedule: build_choose_rewards_schedule(),
         }
     }
 }
@@ -118,32 +116,30 @@ async fn main() {
                             .execute(&mut state.world, &mut state.resources);
                     }
 
-                    TurnState::StartOfTurn { round_number } => {
+                    TurnState::StartOfTurn { round_number: _ } => {
                         state
                             .start_of_turn_schedule
                             .execute(&mut state.world, &mut state.resources);
                     }
-                    TurnState::PlayerTurn { round_number } => {
+                    TurnState::PlayerTurn { round_number: _ } => {
                         state
                             .player_turn_schedule
                             .execute(&mut state.world, &mut state.resources);
                     }
-                    TurnState::EnemyTurn { round_number } => {
+                    TurnState::EnemyTurn { round_number: _ } => {
                         state
                             .enemy_turn_schedule
                             .execute(&mut state.world, &mut state.resources);
                     }
-                    TurnState::BattleOver { player_victorious } => {
+                    TurnState::BattleOver {
+                        player_victorious: _,
+                    } => {
                         state
                             .end_of_battle_schedule
                             .execute(&mut state.world, &mut state.resources);
                     }
                 }
             }
-
-            GameState::ChooseRewards => state
-                .choose_rewards_schedule
-                .execute(&mut state.world, &mut state.resources),
         }
 
         next_frame().await

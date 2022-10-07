@@ -38,7 +38,6 @@ pub fn create_enemy_intents(entity: &Entity, enemy: &Enemy, commands: &mut Comma
 #[read_component(MultipleAttack)]
 pub fn create_deal_damage_intents(
     ecs: &mut SubWorld,
-    entity: &Entity,
     message: &TakeEnemyActionMessage,
     commands: &mut CommandBuffer,
 ) {
@@ -69,7 +68,6 @@ pub fn create_deal_damage_intents(
 #[read_component(InflictWeakness)]
 pub fn create_status_intents(
     ecs: &mut SubWorld,
-    entity: &Entity,
     message: &TakeEnemyActionMessage,
     commands: &mut CommandBuffer,
 ) {
@@ -93,7 +91,6 @@ pub fn create_status_intents(
 #[read_component(BlockRange)]
 pub fn create_block_intents(
     ecs: &mut SubWorld,
-    entity: &Entity,
     message: &TakeEnemyActionMessage,
     commands: &mut CommandBuffer,
 ) {
@@ -129,7 +126,7 @@ pub fn clear_enemy_take_action_messages(
 pub fn draw_enemy_intents(
     ecs: &mut SubWorld,
     entity: &Entity,
-    enemy: &Enemy,
+    _enemy: &Enemy,
     pos: &Vec2,
     sprite: &Sprite,
     #[resource] ui_tex: &UITextures,
@@ -148,11 +145,11 @@ pub fn draw_enemy_intents(
         .filter(|(_, intent)| intent.enemy == *entity)
         .for_each(|(intent_entity, _)| {
             let intent_ref = ecs.entry_ref(*intent_entity).unwrap();
-            if let Ok(adds_block) = intent_ref.get_component::<AddsBlock>() {
+            if let Ok(_adds_block) = intent_ref.get_component::<AddsBlock>() {
                 will_block = true;
             }
 
-            if let Ok(inflicts_status) = intent_ref.get_component::<InflictsStatus>() {
+            if let Ok(_inflicts_status) = intent_ref.get_component::<InflictsStatus>() {
                 will_inflict_status = true;
             }
 
@@ -204,7 +201,6 @@ pub fn draw_enemy_intents(
 #[read_component(Player)]
 pub fn resolve_enemy_damage_intents(
     ecs: &mut SubWorld,
-    entity: &Entity,
     intent: &EnemyIntent,
     damage: &DealsDamage,
     commands: &mut CommandBuffer,
@@ -251,9 +247,8 @@ pub fn resolve_enemy_status_intents(
 
 #[system(for_each)]
 pub fn resolve_enemy_block_intents(
-    ecs: &mut SubWorld,
     entity: &Entity,
-    intent: &EnemyIntent,
+    _intent: &EnemyIntent,
     block: &AddsBlock,
     commands: &mut CommandBuffer,
 ) {
