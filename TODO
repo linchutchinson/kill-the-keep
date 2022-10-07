@@ -1,23 +1,35 @@
-[X] Enemy Death
-[X] Differenct Cards
-[X] Shuffle Deck
+Initial Goal:
+Graphically polished starter deck battle with a single enemy type.
 
-[ ] Map?
-[X] BUG: Enemy Intents persist between combats and you get attacked by ghosts
-[X] Make more enemy types
-[ ] Relics?
-[X] Card Drafting?
+Player Cards/Effects
+[ ] Strike
+[ ] Defend
+[ ] Bash
 
-[ ] BUG: Cards aren't properly placed into the deck at the start of battle.
-[ ] BUG: Temporary Cards created by Anger for example are not removed at the end of battle (Add a tag to them and remove all with tag at end of battle)
-[ ] Implement the rest of the common cards.
+Enemies: Definitely Not Red Louse/Green Louse
+[ ] Curl Up
+[ ] Bite
+[ ] Grow
+[ ] Spit Web
 
-//
+Combat Effects:
+[ ] Weakness
+[ ] Vulnerability
+[ ] Strength
 
-> Attack
-> Block
-> Apply Debuff
+Presentation:
+[ ] Music
+[ ] SFX
+[ ] Card Drawing/Discard Animations
+[ ] Discard/Deck Viewing
+[ ] Effect Icons
 
-> Define Combinations into a complete attack
+---
 
-> Enemy points to a list of attack options with a percentage to select each one
+Stuff for Later:
+[ ] More Cards
+[ ] Card Drafting
+[ ] More Enemies
+[ ] Relics
+[ ] Events
+[ ] Map Nav
