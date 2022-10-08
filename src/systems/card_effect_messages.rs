@@ -15,7 +15,7 @@ pub fn send_card_damage(
     let mut damage = None;
 
     if let Ok(damage_cmp) = card_ref.get_component::<DealsDamage>() {
-        damage = Some(damage_cmp.amount);
+        damage = Some(damage_cmp.0);
     }
 
     if let Ok(_deal_block) = card_ref.get_component::<DealBlock>() {
@@ -35,9 +35,7 @@ pub fn send_card_damage(
             Targeted {
                 target: targeted.target,
             },
-            DealsDamage {
-                amount: damage.unwrap(),
-            },
+            DealsDamage(damage.unwrap()),
         ));
     }
 }
@@ -66,9 +64,7 @@ pub fn send_card_aoe_damage(
                     Targeted {
                         target: *enemy_entity,
                     },
-                    DealsDamage {
-                        amount: damage.amount,
-                    },
+                    DealsDamage(damage.0),
                 ));
             })
         }

@@ -221,18 +221,8 @@ fn spawn_random_enemies(
     commands: &mut CommandBuffer,
     #[resource] combatant_textures: &CombatantTextures,
 ) {
-    let enemies_to_spawn = thread_rng().gen_range(1..=3);
-
-    (0..enemies_to_spawn).for_each(|_| {
-        let enemy_type: i32 = thread_rng().gen_range(0..3);
-        match enemy_type {
-            0 => {
-                spawn_orc(commands, combatant_textures);
-            }
-            1 => spawn_crow(commands, combatant_textures),
-            _ => spawn_spider(commands, combatant_textures),
-        }
-    });
+    spawn_red_louse(commands, combatant_textures);
+    spawn_green_louse(commands, combatant_textures);
 }
 
 #[system]

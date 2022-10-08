@@ -58,7 +58,7 @@ pub fn create_deal_damage_intents(
                 EnemyIntent {
                     enemy: message.enemy,
                 },
-                DealsDamage { amount: damage },
+                DealsDamage(damage),
             ));
         });
     }
@@ -155,7 +155,7 @@ pub fn draw_enemy_intents(
 
             if let Ok(deals_damage) = intent_ref.get_component::<DealsDamage>() {
                 attack_number += 1;
-                attack_damage = deals_damage.amount;
+                attack_damage = deals_damage.0;
             }
         });
 
@@ -214,9 +214,7 @@ pub fn resolve_enemy_damage_intents(
             Targeted {
                 target: *player_entity,
             },
-            DealsDamage {
-                amount: damage.amount,
-            },
+            DealsDamage(damage.0),
         ));
     }
 }

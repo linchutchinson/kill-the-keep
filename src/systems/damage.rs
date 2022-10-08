@@ -12,7 +12,7 @@ pub fn apply_damage_multipliers(
     damage: &mut DealsDamage,
 ) {
     let mut status_query = <(Entity, &StatusEffect, &DamageMultiplier)>::query();
-    let mut final_damage = damage.amount;
+    let mut final_damage = damage.0;
 
     //Outgoing Status
     status_query
@@ -42,7 +42,7 @@ pub fn apply_damage_multipliers(
             final_damage = (damage_multiplier.multiplier * final_damage as f32) as i32;
         });
 
-    damage.amount = final_damage;
+    damage.0 = final_damage;
 }
 
 #[system(for_each)]
@@ -58,7 +58,7 @@ pub fn deal_damage(
     let mut target_ref = ecs.entry_mut(targeted.target).unwrap();
 
     if let Ok(health) = target_ref.get_component_mut::<Health>() {
-        let mut damage_to_deal = damage.amount;
+        let mut damage_to_deal = damage.0;
 
         if health.block >= damage_to_deal {
             health.block -= damage_to_deal;

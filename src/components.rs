@@ -23,9 +23,7 @@ pub struct Card {
 
 pub struct SelectTarget;
 
-pub struct DealsDamage {
-    pub amount: i32,
-}
+pub struct DealsDamage(pub i32);
 
 pub struct DealBlock;
 

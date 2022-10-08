@@ -82,7 +82,7 @@ impl CardData {
 
                 match target {
                     Target::Hero => {
-                        eprintln!("Not Implemented: Self Targeting Cards that Aren't Block");
+                        warn!("Not Implemented: Self Targeting Cards that Aren't Block");
                     }
 
                     Target::Enemy => {
@@ -96,7 +96,7 @@ impl CardData {
             }
 
             CardEffect::DealDamage(amount) => {
-                commands.add_component(entity, DealsDamage { amount: *amount });
+                commands.add_component(entity, DealsDamage(*amount));
             }
 
             CardEffect::DealBlockAsDamage => {
